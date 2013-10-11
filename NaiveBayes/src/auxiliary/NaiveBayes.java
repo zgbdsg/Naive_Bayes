@@ -42,8 +42,34 @@ public class NaiveBayes extends Classifier {
 
     @Override
     public double predict(double[] features) {
-    	FeatureInfo info = dataProbability.process_feature(true, features);
-        return 0;
+    	//Object[] ofea = new Object[features.length];
+    	//FeatureInfo info = dataProbability.process_feature(true, features);
+    	
+    	Object[] datay = prob[0].datay;
+    	double label=0;
+    	
+    	for(int i=0;i<datay.length;i ++) {
+    		double probability = proby.probability[i];
+    		double max = 0;
+    		
+    		for(int j=0;j<features.length;j ++){
+    			Object[] datax = prob[j].datax;
+    			
+    			for(int k=0;k<datax.length;k ++){
+    				if(datax[k] == (Object)features[j]){
+    					probability = probability*prob[j].probability[i*datax.length+k];
+    					break;
+    				}
+    			}
+    		}
+    		
+    		if(probability > max) {
+    			max = probability;
+    			label = (double)proby.datax[i];
+    		}
+
+    	}
+        return label;
     }
 }
 
@@ -56,9 +82,18 @@ class dataProbability{
 	public dataProbability(boolean isCategory,double[] datax,double[] datay) {
 		this.isCategory = isCategory;
 		Object[] dataA = new Object[datax.length];
+		Object[] dataB;
+		if(datay != null)
+			dataB = new Object[datay.length];
+		else
+			dataB = null;
 		
-		for()
-		setProbability(isCategory, datax, datay);
+		for(int i=0;i<datax.length;i ++) {
+			dataA[i] = datax[i];
+			if(datay != null)
+				dataB[i] = datay[i];
+		}
+		setProbability(isCategory, dataA, dataB);
 	}
 	
 	public void setProbability(boolean isCategory,Object[] feature,Object[] label) {

@@ -25,7 +25,7 @@ public class NaiveBayes extends Classifier {
     	prob = new dataProbability[features[0].length];
     	proby = new dataProbability(true, labels, null);
     	
-    	System.out.println(proby.toString());
+    	//System.out.println(proby.toString());
     	
     	double[][] tranFeature = new double[features[0].length][features.length];
     	for(int i=0;i<features[0].length;i ++){
@@ -35,7 +35,7 @@ public class NaiveBayes extends Classifier {
     	
     	for(int i=0;i< tranFeature.length;i ++) {
     		prob[i] = new dataProbability(isCategory[i], tranFeature[i], labels);
-    		System.out.println(prob[i].toString());
+    		//System.out.println(prob[i].toString());
     	}
     	
     }
@@ -47,16 +47,16 @@ public class NaiveBayes extends Classifier {
     	
     	Object[] datay = prob[0].datay;
     	double label=0;
+    	double max = 0;
     	
     	for(int i=0;i<datay.length;i ++) {
     		double probability = proby.probability[i];
-    		double max = 0;
     		
     		for(int j=0;j<features.length;j ++){
     			Object[] datax = prob[j].datax;
     			
     			for(int k=0;k<datax.length;k ++){
-    				if(datax[k] == (Object)features[j]){
+    				if((double)datax[k] == features[j]){
     					probability = probability*prob[j].probability[i*datax.length+k];
     					break;
     				}
@@ -232,7 +232,7 @@ class dataProbability{
 			// System.out.println(numType);
 			// System.out.println(Arrays.toString(amount));
 			FeatureInfo info = new FeatureInfo(numType, feature, amount);
-			System.out.println(info.toString());
+			//System.out.println(info.toString());
 			return info;
 		}
 

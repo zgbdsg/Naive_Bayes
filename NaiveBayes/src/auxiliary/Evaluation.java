@@ -1,5 +1,6 @@
 package auxiliary;
 
+import java.util.Arrays;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -89,6 +90,7 @@ public class Evaluation {
 
                     if (isClassification) {
                         if (prediction != testLabels[j]) {
+                        	//System.out.println(Arrays.toString(testFeatures[j]));
                             error = error + 1;
                         }
                     } else {

@@ -16,6 +16,7 @@ public class NaiveBayes extends Classifier {
 
 	dataProbability[] prob;
 	dataProbability proby;
+	boolean[] isCategory;
 	
     public NaiveBayes() {
     }
@@ -24,8 +25,9 @@ public class NaiveBayes extends Classifier {
     public void train(boolean[] isCategory, double[][] features, double[] labels) {
     	prob = new dataProbability[features[0].length];
     	proby = new dataProbability(true, labels, null);
+    	this.isCategory = isCategory;
     	
-    	System.out.println(proby.toString());
+    	//System.out.println(proby.toString());
     	
     	double[][] tranFeature = new double[features[0].length][features.length];
     	for(int i=0;i<features[0].length;i ++){
@@ -35,9 +37,10 @@ public class NaiveBayes extends Classifier {
     	
     	for(int i=0;i< tranFeature.length;i ++) {
     		prob[i] = new dataProbability(isCategory[i], tranFeature[i], labels);
-    		System.out.println(prob[i].toString());
+    		//System.out.println(prob[i].toString());
     	}
     	
+    	//System.out.println(prob[0].result[0][0]+"    "+prob[0].result[0][1]);
     }
 
     @Override
@@ -47,18 +50,40 @@ public class NaiveBayes extends Classifier {
     	
     	Object[] datay = prob[0].datay;
     	double label=0;
+    	double max = 0;
     	
     	for(int i=0;i<datay.length;i ++) {
     		double probability = proby.probability[i];
-    		double max = 0;
     		
     		for(int j=0;j<features.length;j ++){
     			Object[] datax = prob[j].datax;
+    			double[][] result = prob[j].result;
     			
-    			for(int k=0;k<datax.length;k ++){
-    				if(datax[k] == (Object)features[j]){
-    					probability = probability*prob[j].probability[i*datax.length+k];
-    					break;
+    			if(this.isCategory[j]) {
+	    			for(int k=0;k<datax.length;k ++){
+	    				if((double)datax[k] == features[j]){
+	    					probability = probability*prob[j].probability[i*datax.length+k];
+	    					break;
+	    				}
+	    			}
+    			}else{
+    				//System.out.println(result[0][0]+"    "+result[0][1]);
+    				//System.out.println(prob[0].result[0][0]+"    "+prob[0].result[0][1]);
+    				double average = result[i][0];
+    				double variance = result[i][1];
+    				
+    				if(variance > 0.0000000001){
+	    				double a = (Math.sqrt(2.0*Math.PI)*variance);
+	    				double b = (features[j]-average)*(features[j]-average);
+	    				double c = 2.0*variance*variance;
+	    				double d = (1.0*(1.0/a)*Math.exp(-1.0*b/c));
+	    				probability = probability*d;
+    				}else{
+    					if(Math.abs(average-features[j]) < 0.0000000001){
+    						probability = probability;
+    					}else{
+    						probability = 0;
+    					}
     				}
     			}
     		}
@@ -69,15 +94,20 @@ public class NaiveBayes extends Classifier {
     		}
 
     	}
+    	//System.out.println(Arrays.toString(features));
+    	//System.out.println(label);
         return label;
     }
 }
+
+
 
 class dataProbability{
 	Object[] datax;  //different data in x
 	Object[] datay;  //different data in y
 	boolean isCategory;  // type of x
 	double[] probability;
+	double[][] result;
 	
 	public dataProbability(boolean isCategory,double[] datax,double[] datay) {
 		this.isCategory = isCategory;
@@ -110,20 +140,21 @@ class dataProbability{
 			}
 			
 			for(int i=0;i < info.numType;i ++) {
-				this.probability[i] = 1.0*info.amount[i] / total;
+				this.probability[i] = 1.0*(info.amount[i]+1.0) / (total+1.0*this.datax.length);
 			}
 			
 		}else {
 			//compute conditionprobability
 			FeatureInfo labelInfo = process_feature(true, label);
-			FeatureInfo featureInfo = process_feature(isCategory, feature);
-			
-			this.datax = featureInfo.feature.toArray();
 			this.datay = labelInfo.feature.toArray();
-			this.probability = new double[featureInfo.numType*labelInfo.numType];
 			
 			if(isCategory) {
 				//feature is category
+				FeatureInfo featureInfo = process_feature(isCategory, feature);
+				
+				this.datax = featureInfo.feature.toArray();
+				
+				this.probability = new double[featureInfo.numType*labelInfo.numType];
 				for(int i=0;i < labelInfo.numType;i ++) {
 					double labeldata = (double)datay[i];
 					double labeltotal = labelInfo.amount[i];
@@ -135,34 +166,56 @@ class dataProbability{
 								tmp ++;
 						}
 						
-						probability[i*featureInfo.numType + j] = 1.0*tmp / labeltotal;
+						probability[i*featureInfo.numType + j] = 1.0*(tmp+1.0) / (labeltotal+1.0*featureInfo.numType);
 					}
 				}
 			}else{
 				//feature is numeric
-				FeatureInfo numericinfo = process_feature(true, featureInfo.feature.toArray());
-				
-				List<Object> tmpfea = featureInfo.feature;
+
+				double[][] newfea = new double[labelInfo.numType][];
+				this.result = new double[labelInfo.numType][2];
 				
 				for(int i=0;i < labelInfo.numType;i ++) {
-					double labeldata = (double)datay[i];
-					double labeltotal = labelInfo.amount[i];
-					for(int j=0;j < numericinfo.numType;j ++) {
-						int tmp = 0;
-						double featuredata = featureInfo.amount[tmpfea.indexOf(numericinfo.feature.get(j))];
-						for(int k=0;k < feature.length;k ++) {
-							if((double)feature[k] <= featuredata && (double)label[k] == labeldata)
-								tmp ++;
+					newfea[i] = new double[labelInfo.amount[i]];
+				}
+				
+				for(int i=0;i < labelInfo.numType;i ++) {
+					int num=0;
+					for(int j=0;j<label.length;j ++) {
+						if((double)label[j] == (double)labelInfo.feature.get(i)){
+							newfea[i][num ++] = (double)feature[j];
 						}
-						
-						probability[i*featureInfo.numType + j] = 1.0*tmp / labeltotal;
 					}
+				}
+				
+				for(int i=0;i<labelInfo.numType;i ++) {
+					this.result[i] = get_Gauss(newfea[i]);
 				}
 			}
 		}
 
 	}
 	
+	public double[] get_Gauss(double[] feature) {
+		
+		double[] result = new double[2];
+		double average = 0;
+		double variance = 0;
+		
+		double total = 0;
+		for(int i=0;i<feature.length;i ++){
+			total += feature[i];
+		}
+		average = 1.0*total / feature.length;
+		
+		for(int i=0;i< feature.length;i ++) {
+			variance += Math.pow((feature[i]-average), 2);
+		}
+		variance = Math.sqrt(variance / feature.length);
+		result[0] = average;
+		result[1] = variance;
+		return result;
+	}
 	
 	public static FeatureInfo process_feature(boolean isCategory, Object[] data) {
 			// find the not repeat element , its amount
@@ -232,7 +285,7 @@ class dataProbability{
 			// System.out.println(numType);
 			// System.out.println(Arrays.toString(amount));
 			FeatureInfo info = new FeatureInfo(numType, feature, amount);
-			System.out.println(info.toString());
+			//System.out.println(info.toString());
 			return info;
 		}
 

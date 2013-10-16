@@ -11,6 +11,7 @@ public class TestAss3 {
 
     public static void main(String[] args) {
         String[] dataPaths = new String[]{"breast-cancer.data", "segment.data"};
+        //String[] dataPaths = new String[]{"segment.data"};
         for (String path : dataPaths) {
             DataSet dataset = new DataSet(path);
 
